@@ -1,7 +1,6 @@
-* Dinic's algorithm
+# Dinic's algorithm
 
 ``` C++
-#define INF 123456789
 template <typename T>
 struct edge {
     int end;
@@ -13,14 +12,21 @@ template <typename T>
 struct Dinic {
     int graphSize;
     int edgesNum;
-    vector<vector<int>> graph; // stores indices to edges
+    vector<vector<int>> graph;
     vector <edge<T>> allEdges;
     vector <bool> blacklisted;
+    vector <int> ptr;
     int sink, source;
+    T sourceCapacity;
 
-    Dinic(int source, int sink, int n) : sink(sink - 1), source(source - 1), graphSize(n) {
+    Dinic(int source, int sink, int n, T sourceCapacity) : 
+            sink(sink - 1), 
+            source(source - 1), 
+            graphSize(n), 
+            sourceCapacity(sourceCapacity) {
         graph.resize(n, vector<int>());
         blacklisted.resize(n);
+        ptr.resize(n);
         edgesNum = 0;
     }
 
@@ -63,9 +69,9 @@ struct Dinic {
         if (v == sink) {
             return pushedWater;
         }
-        for (const auto &p : graph[v]) {
-            auto sas = allEdges[p];
-            // Found possible edge.
+        for (auto& i = ptr[v]; i < graph[v].size(); i++) {
+            auto sas = allEdges[graph[v][i]];
+            // Found possible edge. 
             if (sas.capacity > 0 && levels[sas.end] > levels[v] && !blacklisted[sas.end]) {
                 T pushingResult = findAugmentationPath(sas.end, min(pushedWater, sas.capacity), levels);
                 if (pushingResult == 0) {
@@ -75,7 +81,7 @@ struct Dinic {
                     continue;
                 } else {
                     // Found augmentation path, updating edges.
-                    updateFlow(p, pushingResult);
+                    updateFlow(graph[v][i], pushingResult);
                     return pushingResult;
                 }
             }
@@ -86,20 +92,23 @@ struct Dinic {
 
     T findMaximumFlow() {
         bool foundAugmentationPath = true;
-        while (foundAugmentationPath) {
+        T sumOfFlows = 0;
+        while (foundAugmentationPath && sourceCapacity) {
             auto levels = prepareLevels();
             foundAugmentationPath = false;
             fill(blacklisted.begin(), blacklisted.end(), false);
-            while (findAugmentationPath(source, INF, levels)) {
+            fill(ptr.begin(), ptr.end(), 0);
+            while (T r = findAugmentationPath(source, sourceCapacity, levels)) {
                 foundAugmentationPath = true;
+                sourceCapacity -= r;
+                sumOfFlows += r;
             }
         }
-        T result = 0;
-        for (auto c : graph[source]) {
-            result += allEdges[c].flow;
-        }
-        return result;
+        return sumOfFlows;
     }
-
 };
 ```
+
+# Tasks
+
+[Maximum flow](https://www.spoj.com/problems/FASTFLOW/)
